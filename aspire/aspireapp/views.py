@@ -94,3 +94,80 @@ class GetCharacter(APIView):
         if user:
             get_characters = Req.get(one_api_url + '/character', headers={'Authorization': api_token})
             return Response(get_characters.json(), status=status.HTTP_200_OK)
+
+
+# Get all quotes from a specific Character
+class GetCharacterQuote(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        user = request.user.id
+        if user:
+            get_character_quotes = Req.get(one_api_url+'/character/'+id+'/quote', headers={'Authorization': api_token})
+            quotes = get_character_quotes.json()["docs"]
+            return Response(dict(Quotes=quotes), status=status.HTTP_200_OK)
+
+
+# Add Favourite Character to Database
+class AddFavouriteCharacter(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        # get character
+        get_character = Req.get(one_api_url + '/character/'+id, headers={'Authorization': api_token})
+        character_info = get_character.json()["docs"][0]
+
+        character_data = {
+            "user_id": request.user.id,
+            "character_id": character_info["_id"],
+            "character_name": character_info["name"],
+            "character_gender": character_info["gender"],
+            "character_race": character_info["race"]
+        }
+
+        fav_character_serializer = serializers.FavCharacterSerializer(data=character_data)
+
+        if fav_character_serializer.is_valid():
+            fav_character = fav_character_serializer.save()
+
+            return Response(
+                dict(success=character_info["name"]+' has been added to Favourites.'),
+                status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                fav_character_serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST)
+
+
+# Add Favourite Quote by a Character to Database
+class AddFavouriteQuote(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id, qid):
+        # get character
+        get_quote = Req.get(one_api_url + '/quote/'+qid, headers={'Authorization': api_token})
+        quote_info = get_quote.json()["docs"][0]
+        character_id = id
+
+        quote_data = {
+            "user_id": request.user.id,
+            "character_id": quote_info["character"],
+            "quote_id": quote_info["_id"],
+            "quote_dialog": quote_info["dialog"],
+        }
+
+        fav_quote_serializer = serializers.FavQuoteSerializer(data=quote_data)
+
+        if fav_quote_serializer.is_valid():
+            fav_quote = fav_quote_serializer.save()
+
+            return Response(
+                dict(success='Quote has been added to Favourites.'),
+                status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                fav_quote_serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST)
+
+
+

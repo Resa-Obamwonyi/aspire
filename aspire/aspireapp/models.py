@@ -30,7 +30,7 @@ class FavCharacter(models.Model):
 class FavQuote(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
-    character_id = models.ForeignKey(FavCharacter, on_delete=models.CASCADE)
+    character_id = models.CharField(max_length=255)
     quote_id = models.CharField(max_length=255)
     quote_dialog = models.CharField(max_length=255)
 
