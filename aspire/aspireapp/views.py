@@ -71,7 +71,6 @@ class Login(APIView):
                     status=status.HTTP_400_BAD_REQUEST)
 
             user = check_password(password, db_user.password)
-            print(db_user)
 
             if not user:
                 return Response(
