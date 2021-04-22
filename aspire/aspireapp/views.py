@@ -10,7 +10,11 @@ from rest_framework import status
 from .models import User, FavQuote, FavCharacter
 from . import serializers
 from .lib.lower_strip import strip_and_lower
-import requests
+import requests as Req
+from decouple import config
+
+one_api_url = config('API_BASE_URL')
+api_token = config('API_TOKEN')
 
 
 # SignUp View
@@ -67,6 +71,7 @@ class Login(APIView):
                     status=status.HTTP_400_BAD_REQUEST)
 
             user = check_password(password, db_user.password)
+            print(db_user)
 
             if not user:
                 return Response(
@@ -78,3 +83,14 @@ class Login(APIView):
 
         except Exception as err:
             return Response(dict(error=err), status=status.HTTP_400_BAD_REQUEST)
+
+
+# Get all Characters
+class GetCharacter(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user.id
+        if user:
+            get_characters = Req.get(one_api_url + '/character', headers={'Authorization': api_token})
+            return Response(get_characters.json(), status=status.HTTP_200_OK)
