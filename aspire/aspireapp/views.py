@@ -103,7 +103,8 @@ class GetCharacterQuote(APIView):
     def get(self, request, id):
         user = request.user.id
         if user:
-            get_character_quotes = Req.get(one_api_url+'/character/'+id+'/quote', headers={'Authorization': api_token})
+            get_character_quotes = Req.get(one_api_url + '/character/' + id + '/quote',
+                                           headers={'Authorization': api_token})
             quotes = get_character_quotes.json()["docs"]
             return Response(dict(Quotes=quotes), status=status.HTTP_200_OK)
 
@@ -113,9 +114,19 @@ class AddFavouriteCharacter(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
+        user = request.user.id
         # get character
-        get_character = Req.get(one_api_url + '/character/'+id, headers={'Authorization': api_token})
+        get_character = Req.get(one_api_url + '/character/' + id, headers={'Authorization': api_token})
         character_info = get_character.json()["docs"][0]
+
+        # Get favorite characters and check if it exsists there already
+        favourite_characters = FavCharacter.objects.filter(user_id=user)
+
+        for fav_char in favourite_characters.all():
+            if fav_char.character_id == id:
+                return Response(
+                    dict(failure=character_info["name"] + ' already exists in Favourites.'),
+                    status=status.HTTP_400_BAD_REQUEST)
 
         character_data = {
             "user_id": request.user.id,
@@ -131,7 +142,7 @@ class AddFavouriteCharacter(APIView):
             fav_character = fav_character_serializer.save()
 
             return Response(
-                dict(success=character_info["name"]+' has been added to Favourites.'),
+                dict(success=character_info["name"] + ' has been added to Favourites.'),
                 status=status.HTTP_201_CREATED)
         else:
             return Response(
@@ -144,14 +155,27 @@ class AddFavouriteQuote(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id, qid):
+        user = request.user.id
+
         # get character
-        get_quote = Req.get(one_api_url + '/quote/'+qid, headers={'Authorization': api_token})
+        get_quote = Req.get(one_api_url + '/quote/' + qid, headers={'Authorization': api_token})
         quote_info = get_quote.json()["docs"][0]
-        character_id = id
+        character = Req.get(one_api_url + '/character/' + id, headers={'Authorization': api_token})
+        character_info = character.json()["docs"][0]
+
+        # Get favorite quotes and check if it exists there already
+        favourite_quotes = FavQuote.objects.filter(user_id=user)
+
+        for fav_qu in favourite_quotes.all():
+            if fav_qu.quote_id == qid:
+                return Response(
+                    dict(failure='This Quote already exists in Favourites.'),
+                    status=status.HTTP_400_BAD_REQUEST)
 
         quote_data = {
             "user_id": request.user.id,
             "character_id": quote_info["character"],
+            "character_name": character_info["name"],
             "quote_id": quote_info["_id"],
             "quote_dialog": quote_info["dialog"],
         }
@@ -170,4 +194,34 @@ class AddFavouriteQuote(APIView):
                 status=status.HTTP_400_BAD_REQUEST)
 
 
+# Get All Favourites
+class Favourites(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        user = request.user.id
+
+        # Get all wallets that belong to the user
+        favourite_quotes = FavQuote.objects.filter(user_id=user)
+        quotes = []
+        for fav in favourite_quotes.all():
+            quotes.append(("Character: " + fav.character_name,
+                               "Dialog: " + fav.quote_dialog))
+
+        characters = []
+
+        favourite_characters = FavCharacter.objects.filter(user_id=user)
+        for fav in favourite_characters:
+            characters.append(("Character: " + fav.character_name,
+                               "Gender: " + fav.character_gender,
+                               "Race: " + fav.character_race))
+
+        favourites = {
+            "Quotes":quotes,
+            "Characters":characters
+        }
+
+        return Response(
+            dict(Favourites=favourites),
+            status=status.HTTP_200_OK
+        )
