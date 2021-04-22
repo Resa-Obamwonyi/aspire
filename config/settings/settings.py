@@ -82,7 +82,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.settings.wsgi.application'
 
-# AUTH_USER_MODEL = 'aspireapp.User'
+AUTH_USER_MODEL = 'aspireapp.User'
 
 
 # Database

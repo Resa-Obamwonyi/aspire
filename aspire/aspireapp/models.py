@@ -33,3 +33,4 @@ class FavQuote(models.Model):
     character_id = models.ForeignKey(FavCharacter, on_delete=models.CASCADE)
     quote_id = models.CharField(max_length=255)
     quote_dialog = models.CharField(max_length=255)
+
